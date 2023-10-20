@@ -1,3 +1,7 @@
+## About this fork
+本レポジトリは fork 元である [google/accompanist](https://github.com/google/accompanist) において非推奨となる API を保持することを目的としています。
+動作、問題の解決やメンテナンスなどは一切保証しません。
+
 ![Accompanist logo](docs/header.png)
 
 Accompanist is a group of libraries that aim to supplement [Jetpack Compose][compose] with features that are commonly required by developers but not yet available.
