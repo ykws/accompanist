@@ -1,5 +1,6 @@
 /*
  * Copyright 2020 The Android Open Source Project
+ * Copyright 2023 Yumemi, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +38,8 @@ buildscript {
 plugins {
     id "com.diffplug.spotless" version "6.5.2"
     alias(libs.plugins.jetbrains.dokka)
+
+    alias(libs.plugins.gitVersion)
 }
 
 apply plugin: 'com.dropbox.affectedmoduledetector'
@@ -192,34 +195,35 @@ subprojects {
     }
 
     afterEvaluate {
-        def composeSnapshot = libs.versions.composesnapshot.get()
-        if (composeSnapshot.length() > 1) {
-            // We're depending on a Jetpack Compose snapshot, update the library version name
-            // to indicate it's from a Compose snapshot
-            def versionName = project.properties.get('VERSION_NAME')
-            if (versionName.contains("SNAPSHOT")) {
-                version = versionName.replace('-SNAPSHOT', ".compose-${composeSnapshot}-SNAPSHOT")
-            }
-        }
+        def hasMavenPublishPlugin = project.plugins.hasPlugin(libs.plugins.vanniktech.maven.publish.get().pluginId)
+        if (!hasMavenPublishPlugin) return
 
-        if (!version.endsWith('SNAPSHOT')) {
-            // If we're not a SNAPSHOT library version, we fail the build if we're relying on
-            // any snapshot dependencies
-            configurations.configureEach { configuration ->
-                configuration.dependencies.configureEach { dependency ->
-                    if (dependency instanceof ProjectDependency) {
-                        // We don't care about internal project dependencies
-                        return
-                    }
-
-                    def depVersion = dependency.version
-                    if (depVersion != null && depVersion.endsWith('SNAPSHOT')) {
-                        throw new IllegalArgumentException(
-                                "Using SNAPSHOT dependency with non-SNAPSHOT library version: $dependency"
-                        )
-                    }
+        // https://vanniktech.github.io/gradle-maven-publish-plugin/other/#github-packages-example
+        publishing {
+            repositories {
+                maven {
+                    name = "githubPackages"
+                    url = "https://maven.pkg.github.com/yumemi-inc/accompanist"
+                    // username and password (a personal Github access token) should be specified as
+                    // `githubPackagesUsername` and `githubPackagesPassword` Gradle properties or alternatively
+                    // as `ORG_GRADLE_PROJECT_githubPackagesUsername` and `ORG_GRADLE_PROJECT_githubPackagesPassword`
+                    // environment variables
+                    credentials(PasswordCredentials)
                 }
             }
+        }
+        mavenPublishing {
+            // https://github.com/palantir/gradle-git-version
+            def trimVersionPrefix = { String versionStr ->
+                versionStr.startsWith('v') ? versionStr - 'v' : versionStr
+            }
+            def versionName = (gitVersion >> trimVersionPrefix)()
+
+            coordinates(
+                    project.properties.get('GROUP'),
+                    project.properties.get('POM_ARTIFACT_ID'),
+                    versionName,
+            )
         }
     }
 }
