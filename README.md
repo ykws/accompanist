@@ -1,4 +1,4 @@
-## About this fork
+## Notice: About this fork
 本レポジトリは fork 元である [google/accompanist](https://github.com/google/accompanist) において非推奨となる API を保持することを目的としています。
 動作、問題の解決やメンテナンスなどは一切保証しません。
 
