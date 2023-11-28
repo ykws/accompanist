@@ -2,13 +2,29 @@ name: Update release
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-alpha[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-beta[0-9]+"
 
 jobs:
   update_draft_release:
     runs-on: ubuntu-latest
     steps:
+      - name: Detect unstable release
+        id: detect_unstable_release
+        run: |
+          set -ev
+
+          stable_regex="^v[0-9]+\.[0-9]+\.[0-9]+$"
+          is_prerelease=$( if [[ ${{ github.ref_name }} =~ $stable_regex ]]; then echo "false"; else echo "true"; fi )
+
+          echo "IS_PRERELEASE=$is_prerelease" >> $GITHUB_OUTPUT
       - uses: release-drafter/release-drafter@v5
+        with:
+          name: ${{ github.ref_name }} 🌈
+          tag: ${{ github.ref_name }}
+          version: ${{ github.ref_name }}
+          prerelease: ${{ steps.detect_unstable_release.outputs.IS_PRERELEASE }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
